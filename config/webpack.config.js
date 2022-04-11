@@ -429,6 +429,8 @@ module.exports = function (webpackEnv) {
                   isEnvDevelopment &&
                   shouldUseReactRefresh &&
                   require.resolve('react-refresh/babel'),
+                  // FIXME: REACT SOURCE CODE DEBUG
+                  [require.resolve("@babel/plugin-transform-flow-strip-types")],
                 ].filter(Boolean),
                 // This is a feature of `babel-loader` for webpack (not Babel itself).
                 // It enables caching results in ./node_modules/.cache/babel-loader/
