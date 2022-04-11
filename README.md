@@ -1,70 +1,238 @@
-# Getting Started with Create React App
+> https://www.shanejix.com/posts/%E6%90%AD%E5%BB%BA%20React%2017%20%E6%BA%90%E7%A0%81%E6%9C%AC%E5%9C%B0%E8%B0%83%E8%AF%95%E7%8E%AF%E5%A2%83/
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+1. 使用 create-react-app 脚手架创建项目
 
-## Available Scripts
+```shell
+npx create-react-app react-source-code-debug
+```
 
-In the project directory, you can run:
+2. 弹射 create-react-app 脚手架内部配置
 
-### `yarn start`
+```shell
+yarn run eject
+```
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in the browser.
+3. 克隆 react 官方源码 (在项目的根目录下进行克隆)
 
-The page will reload if you make edits.\
-You will also see any lint errors in the console.
+```shell
+git clone --branch v17.0.2 --depth=1 https://github.com/facebook/react.git src/react
+```
 
-### `yarn test`
+4. 通过 alias ，链接本地源码
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+```javascript
+// 文件位置: react-source-code-debug/config/webpack.config.js
 
-### `yarn build`
+resolve: {
+  // ...
+  alias: {
+    // Support React Native Web
+    // https://www.smashingmagazine.com/2016/08/a-glimpse-into-the-future-with-react-native-for-web/
+    'react-native': 'react-native-web',
+    // Allows for better profiling with ReactDevTools
+    ...(isEnvProductionProfile && {
+      'react-dom$': 'react-dom/profiling',
+      'scheduler/tracing': 'scheduler/tracing-profiling',
+    }),
+    ...(modules.webpackAliases || {}),
+    + // FIXME: REACT SOURCE CODE DEBUG
+    + 'react': path.resolve(__dirname, '../src/react/packages/react'),
+    + 'react-dom': path.resolve(__dirname, '../src/react/packages/react-dom'),
+    + 'shared': path.resolve(__dirname, '../src/react/packages/shared'),
+    + 'react-reconciler': path.resolve(__dirname, '../src/react/packages/react-reconciler'),
+    + // 'scheduler': path.resolve(__dirname, '../src/react/packages/scheduler'),
+  },
+}
+```
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+5. 修改环境变量
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+```javascript
+// 文件位置: react-source-code-debug/config/env.js
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+// FIXME: REACT SOURCE CODE DEBUG
+const stringified = {
+  + __DEV__: true,
+  + __PROFILE__: true,
+  + __UMD__: true,
+  + __EXPERIMENTAL__: true,
+  'process.env': Object.keys(raw).reduce((env, key) => {
+    env[key] = JSON.stringify(raw[key]);
+    return env;
+  }, {}),
+};
+```
 
-### `yarn eject`
+6. 在根目录创建 `eslintrc.json`文件，内容如下
 
-**Note: this is a one-way operation. Once you `eject`, you can’t go back!**
+```json
+{
+  "extends": "react-app",
+  "globals": {
+    "__DEV__": true,
+    "__PROFILE__": true,
+    "__UMD__": true,
+    "__EXPERIMENTAL__": true
+  }
+}
+```
 
-If you aren’t satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+7. 修改 ReactFiberHostConfig.js 文件
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you’re on your own.
+```javascript
+// 文件位置: /react/packages/react-reconciler/src/ReactFiberHostConfig.js
 
-You don’t have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn’t feel obligated to use this feature. However we understand that this tool wouldn’t be useful if you couldn’t customize it when you are ready for it.
+- import invariant from 'shared/invariant';
+- invariant(false, 'This module must be shimmed by a specific renderer.');
 
-## Learn More
++ // FIXME: REACT SOURCE CODE DEBUG
++ export * from './forks/ReactFiberHostConfig.dom'
+```
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+8. 修改 ReactSharedInternals.js 文件
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+```javascript
+// 文件位置: /react/packages/shared/ReactSharedInternals.js
 
-### Code Splitting
+- import * as React from 'react';
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
+- const ReactSharedInternals =
+-   React.__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED;
 
-### Analyzing the Bundle Size
++ // FIXME: REACT SOURCE CODE DEBUG
++ import ReactSharedInternals from '../react/src/ReactSharedInternals';
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
++ export default ReactSharedInternals;
+```
 
-### Making a Progressive Web App
+9. 修改 invariant.js 文件
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
+```javascript
+// 文件位置: /react/packages/shared/invariant.js
 
-### Advanced Configuration
+export default function invariant(condition, format, a, b, c, d, e, f) {
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
+  + // FIXME: REACT SOURCE CODE DEBUG
+  + if (condition) {
+  +   return;
+  + }
 
-### Deployment
+  throw new Error(
+    'Internal React error: invariant() is meant to be replaced at compile ' +
+    'time. There is no runtime version.',
+  );
+}
+```
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
+10. 关闭 eslint 扩展
 
-### `yarn build` fails to minify
+```javascript
+// 文件位置: react/.eslingrc.js [module.exports]
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+- extends: [
+-  'fbjs',
+-  'prettier'
+- ]
+```
+
+11. 解决 eslint 报错
+
+```javascript
+// 将 webpack 中 eslint 插件给关掉,修改 src/config/webpack.config.js 文件
+
+// ...
+
+// FIXME: REACT SOURCE CODE DEBUG
+
+// !disableESLintPlugin &&
+// new ESLintPlugin({
+//   // Plugin options
+//   extensions: ['js', 'mjs', 'jsx', 'ts', 'tsx'],
+//   formatter: require.resolve('react-dev-utils/eslintFormatter'),
+//   eslintPath: require.resolve('eslint'),
+//   failOnError: !(isEnvDevelopment && emitErrorsAsWarnings),
+//   context: paths.appSrc,
+//   cache: true,
+//   cacheLocation: path.resolve(
+//     paths.appNodeModules,
+//     '.cache/.eslintcache'
+//   ),
+//   // ESLint class options
+//   cwd: paths.appPath,
+//   resolvePluginsRelativeTo: __dirname,
+//   baseConfig: {
+//     extends: [require.resolve('eslint-config-react-app/base')],
+//     rules: {
+//       ...(!hasJsxRuntime && {
+//         'react/react-in-jsx-scope': 'error',
+//       }),
+//     },
+//   },
+// }),
+```
+
+12. 告诉 babel 在转换代码时忽略类型检查
+
+```shell
+yarn add @babel/plugin-transform-flow-strip-types -D
+```
+
+```javascript
+// 文件位置: react-source-code-debug/config/webpack.config.js [babel-loader]
+
+plugins: [
+  // ...
+
+  // FIXME: REACT SOURCE CODE DEBUG
+  [require.resolve("@babel/plugin-transform-flow-strip-types")],
+];
+```
+
+13. 新增 eslint 配置
+
+```json
+// 在 react 源码文件夹中新建 .eslintrc.json 并添加如下配置
+
+{
+  "extends": "react-app",
+  "globals": {
+    "__DEV__": true,
+    "__PROFILE__": true,
+    "__UMD__": true,
+    "__EXPERIMENTAL__": true
+  }
+}
+```
+
+14. 修改 `react` `react-dom` 引入方式
+
+```javascript
+- // import React from 'react';
+- // import ReactDOM from 'react-dom';
+
++ // FIXME: REACT SOURCE CODE DEBUG
+
++ import * as React from 'react';
++ import * as ReactDOM from 'react-dom';
+```
+
+15. 解决 VSCode 中 flow 报错
+
+```javascript
+// 新建 .vscode/setting.js
+
+{
+  "typescript.validate.enable": false,
+  "javascript.validate.enable": false
+}
+```
+
+16. 解决 **DEV** 报错
+
+```shell
+// 删除 node_modules 文件夹，执行 npm install / yarn
+
+// 根目录下
+
+rm -fr node_modules && yarn
+```
