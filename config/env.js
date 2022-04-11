@@ -1,4 +1,4 @@
-'use strict';
+
 
 const fs = require('fs');
 const path = require('path');
@@ -92,14 +92,27 @@ function getClientEnvironment(publicUrl) {
         FAST_REFRESH: process.env.FAST_REFRESH !== 'false',
       }
     );
+
   // Stringify all values so we can feed into webpack DefinePlugin
+  // const stringified = {
+  //   'process.env': Object.keys(raw).reduce((env, key) => {
+  //     env[key] = JSON.stringify(raw[key]);
+  //     return env;
+  //   }, {}),
+  // };
+
+  // FIXME: REACT SOURCE CODE DEBUG
   const stringified = {
+    __DEV__: true,
+    __PROFILE__: true,
+    __UMD__: true,
+    __EXPERIMENTAL__: true,
     'process.env': Object.keys(raw).reduce((env, key) => {
       env[key] = JSON.stringify(raw[key]);
       return env;
     }, {}),
   };
-
+  
   return { raw, stringified };
 }
 
